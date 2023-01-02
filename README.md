@@ -12,13 +12,13 @@ You are running a POSIX compatible OS, with ffmpeg, perl:xpath, eyeD3 installed 
 # Setup
 Create a file called .env containing the following lines
 
-```
+`
 SSH_CMD="sudo -u USER ssh USER@HOSTNAME"
 MYSQL_DB="YOUR VALUES HERE"
 MYSQL_USER="YOUR VALUES HERE"
 MYSQL_PASSWORD="YOUR VALUES HERE"
 MYSQL_PREFIX="YOUR VALUES HERE"
-```
+`
 
 take the values from your WP installation.
 
@@ -26,17 +26,19 @@ If you are running MySql on the local instance adjust the SSH_CMD accordingly.
 
 Modify the script and replace your values:
 
-```
+`
 SRC_DIR="SOURCE_DIRECTORY"
 TARGET_DIR="TARGET_DIRECTORY"
 LOGO=${SRC_DIR}/logo.jpg
 PODCAST_TITLE="PODCAST_TITLE"
 CDN_BASE_URL="BASE_URL"
-```
+`
 
 # Usage
 
+`
 ./generate_video 000 [-f] [-i] [-e]
+`
 
 Run the script with the episode number (padded with 0!) to generate the 
  * cover,
@@ -48,11 +50,12 @@ files. The mp3 file will be modified to add the cover to its ID3 tag.
 The output of the command will be the template that can be used to be added when uploading to YT or Meta.
 
 ## Flags
--f flag forces episode fetch and regeneration
--i only regenerates images (no video)
--e can be used to define episode number
+* -f flag forces episode fetch and regeneration
+* -i only regenerates images (no video)
+* -e can be used to define episode number
 
-If the -f flag is not specified, and the episode_export.txt is less than a day old, the episode information will not be refetched, and only missing files will be created. This is useful, when you want to create the episode descriptions for yt/google exports.
+If the -f flag is not specified, and the episode_export.txt is less than a day old, episode information will not be refetched
+and only missing files will be created. This is useful, when you want to create the episode descriptions for yt/google exports.
 
 ## Example
 
