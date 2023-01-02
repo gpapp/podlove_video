@@ -327,50 +327,16 @@ function add_mp3cover () {
     rm $lowqual
 }
 
-function display_fb_text () {
-    local rd="$(echo $EPISODE_REC_DATE|cut -d'T' -f1)"
-    local pd="$(echo $EPISODE_POST_DATE|cut -d'T' -f1)"
-    local kw="$(echo "${EPISODE_KEYWORDS}"|awk -r '{print "#" gensub(/,/,", #","g",gensub(/ /,"","g",$0))}')"
-    echo "FaceBook:
-$PODCAST_TITLE - $EPISODE - $EPISODE_TITLE ($pd)
-$EPISODE_SUMMARY
---
-
-Friss adásainkat követheted
-  weboldalunkon (https://zartosztaly.hu), 
-  Spotifyon (https://open.spotify.com/show/2JWIyZ7yoLxq4Hy335HxGF)
-  és minden népszerű podcast platformon.
-
-Beszélgethetsz velünk és hallgatóinkkal Discordon (https://discord.gg/ncGqpPubCR)
-
-$kw
-"
-}
-
-function display_yt_text () {
-    local rd=$(echo $EPISODE_REC_DATE|cut -d'T' -f1)
-    local pd=$(echo $EPISODE_POST_DATE|cut -d'T' -f1)
-    echo "YouTube:
-$PODCAST_TITLE - $EPISODE - $EPISODE_TITLE ($pd)
-
-$EPISODE_SUMMARY
---
-Friss adásainkat követheted
-  weboldalunkon (https://zartosztaly.hu), 
-  Spotifyon (https://open.spotify.com/show/2JWIyZ7yoLxq4Hy335HxGF)
-  és minden népszerű podcast platformon.
-
-Beszélgethetsz velünk és hallgatóinkkal Discordon (https://discord.gg/ncGqpPubCR)
---
-Kapcsolódó linkek:
-$EPISODE_LINKS
---
-$EPISODE_KEYWORDS
-"
+function display_template () {
+    local EPISODE_RECORDED="$(echo $EPISODE_REC_DATE|cut -d'T' -f1)"
+    local EPISODE_POSTED="$(echo $EPISODE_POST_DATE|cut -d'T' -f1)"
+    local EPISODE_HASHKEYS="$(echo "${EPISODE_KEYWORDS}"|awk -r '{print "#" gensub(/,/,", #","g",gensub(/ /,"","g",$0))}')"
+    eval "echo \"$(cat display_template.txt)\""
 }
 
 function usage () {
-	echo " Specify the episode to regenerate.
+	echo "
+Specify the episode to regenerate.
 	generate_video.sh [episode] [-h] [-f] [-e <episode>]
 	-h display this help
 	-f force regeneration
@@ -452,5 +418,4 @@ fi
 
 chown www-data.www-data -R ${TARGET_DIR}
 chmod -R ug+rwX ${TARGET_DIR}
-display_fb_text
-display_yt_text
+display_template

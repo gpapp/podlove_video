@@ -1,0 +1,30 @@
+FaceBook:
+$PODCAST_TITLE - $EPISODE - $EPISODE_TITLE ($EPISODE_POSTED)
+$EPISODE_SUMMARY
+--
+
+Friss adásainkat követheted
+  weboldalunkon (https://zartosztaly.hu), 
+  Spotifyon (https://open.spotify.com/show/2JWIyZ7yoLxq4Hy335HxGF)
+  és minden népszerű podcast platformon.
+
+Beszélgethetsz velünk és hallgatóinkkal Discordon (https://discord.gg/ncGqpPubCR)
+
+$EPISODE_HASHKEYS
+
+YouTube:
+$PODCAST_TITLE - $EPISODE - $EPISODE_TITLE ($EPISODE_POSTED)
+
+$EPISODE_SUMMARY
+--
+Friss adásainkat követheted
+  weboldalunkon (https://zartosztaly.hu), 
+  Spotifyon (https://open.spotify.com/show/2JWIyZ7yoLxq4Hy335HxGF)
+  és minden népszerű podcast platformon.
+
+Beszélgethetsz velünk és hallgatóinkkal Discordon (https://discord.gg/ncGqpPubCR)
+--
+Kapcsolódó linkek:
+$EPISODE_LINKS
+--
+$EPISODE_KEYWORDS
