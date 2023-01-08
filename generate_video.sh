@@ -32,8 +32,8 @@ function load_ep_data_SQL () {
     fi
     IFS=$'|' read -r _ EPISODE_SLUG EPISODE_TITLE EPISODE_REC_DATE EPISODE_POST_DATE EPISODE_KEYWORDS EPISODE_SUMMARY <<< \
         $( awk -F"\t" -r -v ep=${episode} '{if ($1==ep) {print gensub(/\t/,"|","g",$0)}}' episode_export.txt)
-    EPISODE_SUMMARY=$(awk -F"\t" -r -v ep=${episode} '{if ($1==ep) {val= gensub(/\r/,"","g",$8);val=gensub (/\\t/,"\t","g",val); val=gensub(/\\n/,"\n","g",val); print val}}' episode_export.txt|perl -Mopen=locale -pe 's/&#x([\da-f]+);/chr hex $1/gie')
-    EPISODE_LINKS=$(awk -F"\t" -r -v ep=${episode} '{if ($1==ep) {val= gensub(/\r/,"","g",$9);val=gensub (/\\t/,"\t","g",val); val=gensub(/\\n/,"\n","g",val); print val}}' episode_export.txt)
+    EPISODE_SUMMARY=$(awk -F"\t" -r -v ep=${episode} '{if ($1==ep) {val= gensub(/\r/,"","g",$7);val=gensub (/\\t/,"\t","g",val); val=gensub(/\\n/,"\n","g",val); print val}}' episode_export.txt|perl -Mopen=locale -pe 's/&#x([\da-f]+);/chr hex $1/gie')
+    EPISODE_LINKS=$(awk -F"\t" -r -v ep=${episode} '{if ($1==ep) {val= gensub(/\r/,"","g",$8);val=gensub (/\\t/,"\t","g",val); val=gensub(/\\n/,"\n","g",val); print val}}' episode_export.txt)
 }
 
 function update_ep_image_SQL () {
