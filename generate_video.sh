@@ -216,6 +216,7 @@ function create_images () {
 
     echo "Generating logo with text ${EPISODE_TITLE}"
     local skip_video_frames=$1
+    local skip_image_frames=$2
     local last_chapter_frame="${TARGET_DIR}/${EPISODE_SLUG}_cover.jpg"
     local position=0
     local last_position=2
@@ -224,23 +225,18 @@ function create_images () {
     mkdir -p "${TARGET_DIR}/images/${EPISODE_SLUG}/"
 
     #Create video background frame and title overlay
-    local overlay_frame=$(get_overlay_image)
-    local title_frame=$(create_title_frame "$overlay_frame" "$PODCAST_TITLE\n$EPISODE - $EPISODE_TITLE\n(${pd})")
-
-    cp ${title_frame} "${TARGET_DIR}/${EPISODE_SLUG}_title.jpg"
     if [ ! "${skip_video_frames}" = "true" ]; then
 	SCRIPT=$(mktemp)
 	echo "Adding title frame in ${SCRIPT} title: ${text}" >&2
+    	local overlay_frame=$(get_overlay_image)
+      	local title_frame=$(create_title_frame "$overlay_frame" "$PODCAST_TITLE\n$EPISODE - $EPISODE_TITLE\n(${pd})")
+      	cp ${title_frame} "${TARGET_DIR}/${EPISODE_SLUG}_title.jpg"
 	local last_video_frame="$overlay_frame"
-	echo << EOM >$SCRIPT
-ffconcat version 1.0"
-file ${ep_frame}
+	echo "ffconcat version 1.0
+file ${title_frame}
 duration 2
 inpoint 00:00:00.00
-file ${ep_frame}
-EOM
-    else
-	rm ${title_frame}
+file ${title_frame}" > ${SCRIPT}
     fi
 
     local psc_in="${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.psc"
@@ -271,16 +267,18 @@ EOM
 	esac
 	if ( [ "$k" = "title" ] && [ "${last_title}" != "${v}" ] ) || [ ! -z "${done_last}" ]; then
 		    local duration=$(( $position - $last_position ))
-		    mv $(create_chapter_frame "${last_chapter_frame}" "${last_title}" "${image}") "${TARGET_DIR}/images/${EPISODE_SLUG}/${EPISODE_SLUG}_${position}.jpg"
-		    local last_chapter_frame="${TARGET_DIR}/images/${EPISODE_SLUG}/${EPISODE_SLUG}_${position}.jpg"
+		    if [ ! "${skip_image_frames}" = "true" ]; then 
+		    	mv $(create_chapter_frame "${last_chapter_frame}" "${last_title}" "${image}") "${TARGET_DIR}/images/${EPISODE_SLUG}/${EPISODE_SLUG}_${position}.jpg"
+		    	local last_chapter_frame="${TARGET_DIR}/images/${EPISODE_SLUG}/${EPISODE_SLUG}_${position}.jpg"
+		    fi
 		    echo "	<psc:chapter title='${last_title}' start='${position_raw}' " \
-			"image='${CDN_BASE_URL}/images/${EPISODE_SLUG}/${EPISODE_SLUG}_${position}.jpg'"\
+			"image='${CDN_BASE_URL}/images/${EPISODE_SLUG}/${EPISODE_SLUG}_${position}.jpg'" \
 			$([ ! -z "$href" ] && echo "href='$(echo $href|perl -C -MHTML::Entities -pe 'encode_entities($_);')'") \
 			"/>" >> "${psc_out}"
-		    local last_position=$position
 		    if [ ! "${skip_video_frames}" = "true" ]; then 
 			    last_video_frame=$(add_episode_frame "$SCRIPT" "$duration" "$last_video_frame" "$last_title" "$image")
 		    fi
+		    local last_position=$position
 		    local href=""
 		    local image=""
 		    local last_title="$(echo $v |perl -C -MHTML::Entities -pe 'decode_entities($_);')"
@@ -306,7 +304,7 @@ EOM
 
 function create_video () {
     local sequence="$1"
-    local mp3src="${SRC_DIR}/${EPISODE_SLUG}.mp3"
+    local mp3src="${TARGET_DIR}/${EPISODE_SLUG}.mp3"
     ffmpeg -hide_banner -y -f concat -async 1 -safe 0 -i "${sequence}" -i "${mp3src}" \
 	-c:v libx264 -preset medium -c:a aac -movflags +faststart -vf "fps=1,format=yuv420p" \
 	"${TARGET_DIR}/${EPISODE_SLUG}.mp4"
@@ -341,16 +339,18 @@ Specify the episode to regenerate.
 	-h display this help
 	-f force regeneration
 	-i generate images only
+	-v generate video only
 	-e episode number (overrides positional argument)
 "
 }
 
-while getopts hfie: flag
+while getopts hfive: flag
 do
 	case "${flag}" in
 		h) usage; exit 0;;
 		f) FORCE="true";;
 		i) IMAGEONLY="true";;
+		v) VIDEOONLY="true";;
 		e) EPISODE=${OPTARG};;
 	esac
 done
@@ -391,8 +391,10 @@ fi
 
 if [ ! -z "${FORCE}" ]; then
 	echo "Forcing regeneration of episode ${EPISODE}"
-	rm "${TARGET_DIR}/${EPISODE_SLUG}"_cover.jpg
-	rm -rf "${TARGET_DIR}/images/${EPISODE_SLUG}"
+	if [ ! "${VIDEOONLY}" = "true" ]; then
+		rm "${TARGET_DIR}/${EPISODE_SLUG}"_cover.jpg
+		rm -rf "${TARGET_DIR}/images/${EPISODE_SLUG}"
+	fi
 	if [ ! "${IMAGEONLY}" = "true" ]; then
 	     rm "${TARGET_DIR}/${EPISODE_SLUG}".mp4
 	fi
@@ -401,12 +403,12 @@ if [ -z "${EPISODE_TITLE}" ]; then
 	echo "Error loading episode data" >&2
 	exit;
 fi
-if [ ! -e "${TARGET_DIR}/${EPISODE_SLUG}_cover.jpg" ]; then
+if [ ! "${VIDEOONLY}" = "true" ] && [ ! -e "${TARGET_DIR}/${EPISODE_SLUG}_cover.jpg" ]; then
   create_cover_art
   add_mp3cover
 fi
 if [ ! -e "${TARGET_DIR}/${EPISODE_SLUG}.mp4" ] || [ ! -d "${TARGET_DIR}/images/${EPISODE_SLUG}" ]; then
-  create_images "${IMAGEONLY}"
+	create_images "${IMAGEONLY}" "${VIDEOONLY}"
 fi
 if [ ! "${IMAGEONLY}" = "true" ] && [ ! -e "${TARGET_DIR}/${EPISODE_SLUG}.mp4" ]; then
   if [ -e "$SCRIPT" ]; then
