@@ -1,9 +1,10 @@
 #!/bin/bash
-SRC_DIR="/data/podcast/podcast/src"
+SRC_DIR="/data/podcast/src"
 TARGET_DIR="/data/podcast/podcast"
 LOGO=${SRC_DIR}/logo.jpg
 PODCAST_TITLE="Zártosztály Podcast"
 CDN_BASE_URL="https://cdn.zartosztaly.hu/podcast"
+FONT="-font Liberation-Sans"
 
 function export_from_mysql () {
     source .env
@@ -67,7 +68,7 @@ function get_overlay_text() {
     local pd="$(echo $EPISODE_POST_DATE|cut -d'T' -f1)"
     local label="${PODCAST_TITLE}\n${EPISODE} - ${EPISODE_TITLE}\n(${pd})"
     convert \
-          -background 'transparent' -fill 'white' -pointsize 20 -gravity center -size 300x100 caption:"${label}" -background '#1115' -extent 350x150 \
+          -background 'transparent' -fill 'white' ${FONT} -pointsize 20 -gravity center -size 300x100 caption:"${label}" -background '#1115' -extent 350x150 \
           ${text}
     echo ${text}
 }
@@ -88,7 +89,7 @@ function get_overlay_image() {
         convert ${LOGO} -resize 950x650 -gravity north -background black -extent 1280x720 \
           miff:- |
             composite \
-                -compose src_over -gravity northeast -geometry +50+50 "${overlay_text}" \
+                -compose src_over -gravity northeast -geometry +50+50 ${FONT} "${overlay_text}" \
                 - \
                 ${logo}
     else
@@ -117,11 +118,11 @@ function create_cover_art() {
     if [ "${EPISODE_IMAGE}" = "NULL" ]; then
         convert ${LOGO} -resize 2200x1600 -gravity center -background black -extent 2400x2400 \
 	    miff:- \
-        | convert - -gravity north -pointsize 140 -fill white -annotate +0+50 "$PODCAST_TITLE" \
+        | convert - -gravity north ${FONT} -pointsize 140 -fill white -annotate +0+50 "$PODCAST_TITLE" \
 	    miff:- \
-        | convert - -gravity north -pointsize 100 -fill white -annotate +0+200 "$EPISODE - $EPISODE_TITLE" \
+        | convert - -gravity north ${FONT} -pointsize 100 -fill white -annotate +0+200 "$EPISODE - $EPISODE_TITLE" \
 	    miff:- \
-        | convert - -gravity southwest -pointsize 100 -fill white -annotate +50+50 "${pd}" \
+        | convert - -gravity southwest ${FONT} -pointsize 100 -fill white -annotate +50+50 "${pd}" \
        	    "${target}"
     else
     	local overlay_logo="$(mktemp_jpg)"
@@ -132,11 +133,11 @@ function create_cover_art() {
           miff:- \
         | composite -compose src_over -gravity southeast -geometry +40+40 "${overlay_logo}" - \
 	    miff:- \
-        | convert - -gravity north -pointsize 140 -fill white -annotate +0+50 "$PODCAST_TITLE" \
+        | convert - -gravity north ${FONT} -pointsize 140 -fill white -annotate +0+50 "$PODCAST_TITLE" \
 	    miff:- \
-        | convert - -gravity north -pointsize 100 -fill white -annotate +0+200 "$EPISODE - $EPISODE_TITLE" \
+        | convert - -gravity north ${FONT} -pointsize 100 -fill white -annotate +0+200 "$EPISODE - $EPISODE_TITLE" \
 	    miff:- \
-        | convert - -gravity southwest -pointsize 100 -fill white -annotate +50+50 "${pd}" \
+        | convert - -gravity southwest ${FONT} -pointsize 100 -fill white -annotate +50+50 "${pd}" \
        	    "${target}"
        rm ${overlay_logo}
     fi
@@ -153,14 +154,14 @@ function create_chapter_frame() {
         local xoff=$(( $RANDOM % 360 - 180 ));  [ -z $(echo $xoff|grep '-') ] && xoff='+'$xoff
         local yoff=$(( $RANDOM % 780 - 450 )); [ -z $(echo $yoff|grep '-') ] && yoff='+'$yoff
 	convert -background khaki -border 1 -bordercolor gray -size 720x210 \
-		-gravity center -pointsize 60 -fill black caption:"${text}" \
+		-gravity center ${FONT} -pointsize 60 -fill black caption:"${text}" \
 		-background transparent -rotate ${angle} miff:- | \
 	    composite -compose src_over -gravity center - -geometry ${xoff}${yoff} \( "${last_frame}" -resize 1500x1500 \) \
 		${frame}
     else
         local xoff=$(( $RANDOM % 360 - 180 ));  [ -z $(echo $xoff|grep '-') ] && xoff='+'$xoff
         local yoff=$(( $RANDOM % 240 - 120 )); [ -z $(echo $yoff|grep '-') ] && yoff='+'$yoff
-        convert xc:white -resize 720x480 -size 720x210 -fill black -pointsize 60 -gravity center caption:"$text" -append  miff:- | \
+        convert xc:white -resize 720x480 -size 720x210 -fill black ${FONT} -pointsize 60 -gravity center caption:"$text" -append  miff:- | \
             composite -compose src_over -gravity north \( ${image} -resize 720x480 \) - miff:- | \
             convert - -bordercolor Snow -background gray50 -polaroid ${angle} miff:- | \
             composite -compose src_over -gravity center - -geometry ${xoff}${yoff} \( "${last_frame}" -resize 1500x1500 \)  \
@@ -174,7 +175,7 @@ function create_title_frame() {
     local text="$2"
 
     local frame="$(mktemp_jpg)"
-    convert ${ep_frame} -background black -gravity south -pointsize 30 -interline-spacing -5 -fill white -annotate +0+15 "${text}" ${frame}
+    convert ${ep_frame} -background black -gravity south ${FONT} -pointsize 30 -interline-spacing -5 -fill white -annotate +0+15 "${text}" ${frame}
     echo ${frame}
 }
 
@@ -192,14 +193,14 @@ function add_episode_frame() {
         local xoff=$(( $RANDOM % 160 - 80 ));  [ -z $(echo $xoff|grep '-') ] && xoff='+'$xoff
         local yoff=$(( $RANDOM % 300 - 150 )); [ -z $(echo $yoff|grep '-') ] && yoff='+'$yoff
 	convert -background khaki -border 1 -bordercolor gray -size 450x150 \
-		-gravity center -pointsize 25 -fill black caption:"${text}" \
+		-gravity center ${FONT} -pointsize 25 -fill black caption:"${text}" \
 		-background transparent -rotate ${angle} miff:- | \
 	    composite -compose src_over -gravity center - -geometry ${xoff}${yoff} "${last_frame}" \
 		${frame}
     else
         local xoff=$(( $RANDOM % 160 - 80 ));  [ -z $(echo $xoff|grep '-') ] && xoff='+'$xoff
         local yoff=$(( $RANDOM % 100 - 50 )); [ -z $(echo $yoff|grep '-') ] && yoff='+'$yoff
-        convert xc:white -resize 450x350 -size 450x120 -fill black -pointsize 25 -gravity center caption:"$text" -append  miff:- | \
+        convert xc:white -resize 450x350 -size 450x120 -fill black ${FONT} -pointsize 25 -gravity center caption:"$text" -append  miff:- | \
             composite -compose src_over -gravity north \( ${image} -resize 450x350  \) - miff:- | \
             convert - -bordercolor Snow -background gray50 -polaroid ${angle} miff:- | \
             composite -compose src_over -gravity center - -geometry ${xoff}${yoff} "${last_frame}"  \
@@ -239,7 +240,7 @@ inpoint 00:00:00.00
 file ${title_frame}" > ${SCRIPT}
     fi
 
-    local psc_in="${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.psc"
+    local psc_in="${SRC_DIR}/${EPISODE_SLUG}.psc"
     local psc_out="${TARGET_DIR}/${EPISODE_SLUG}.psc"
     local last_title=""
 
@@ -306,7 +307,7 @@ function create_video () {
     local sequence="$1"
     local mp3src="${TARGET_DIR}/${EPISODE_SLUG}.mp3"
     ffmpeg -hide_banner -y -f concat -async 1 -safe 0 -i "${sequence}" -i "${mp3src}" \
-	-c:v libx264 -preset medium -c:a aac -movflags +faststart -vf "fps=1,format=yuv420p" \
+	-c:v libx264 -preset medium -tune stillimage -c:a aac -ab 192k -movflags +faststart -vf "fps=1,format=yuv420p" \
 	"${TARGET_DIR}/${EPISODE_SLUG}.mp4"
 }
 
@@ -320,6 +321,11 @@ function add_mp3cover () {
     local lowqual="$(mktemp_jpg)"
     convert "${TARGET_DIR}/${EPISODE_SLUG}_cover.jpg" -quality 20 -resize 3000x3000 "${lowqual}"
     eyeD3 --remove-all-images \
+      -a "${PODCAST_TITLE}" \
+      -t "${EPISODE_TITLE}" \
+      -n ${EPISODE} \
+      --recording-date ${EPISODE_REC_DATE} \
+      --release-date ${EPISODE_POST_DATE} \
       --add-image "${lowqual}:MEDIA" \
       "${TARGET_DIR}/${EPISODE_SLUG}".mp3
     rm $lowqual
@@ -377,13 +383,13 @@ if [ "${EPISODE_SLUG}" = "NULL" ]; then
     echo "Episode has no slug set in DB, have you saved the episode yet?"
     exit
 fi
-if [ ! -e "${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.psc" ]; then
+if [ ! -e "${SRC_DIR}/${EPISODE_SLUG}.psc" ]; then
     echo "Episode psc is missing, cannot generate images"
     exit
 fi
-if [ -e "${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.png" ]; then EPISODE_IMAGE="${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.png"
-elif [ -e "${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.jpg" ] ; then EPISODE_IMAGE="${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.jpg"
-elif [ -e "${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.jpeg" ] ; then EPISODE_IMAGE="${SRC_DIR}/${EPISODE_SLUG}/${EPISODE_SLUG}.jpeg"
+if [ -e "${SRC_DIR}/${EPISODE_SLUG}.png" ]; then EPISODE_IMAGE="${SRC_DIR}/${EPISODE_SLUG}.png"
+elif [ -e "${SRC_DIR}/${EPISODE_SLUG}.jpg" ] ; then EPISODE_IMAGE="${SRC_DIR}/${EPISODE_SLUG}.jpg"
+elif [ -e "${SRC_DIR}/${EPISODE_SLUG}.jpeg" ] ; then EPISODE_IMAGE="${SRC_DIR}/${EPISODE_SLUG}.jpeg"
 else
     echo "Episode cover image is missing, cannot generate images for episode ${EPISODE_SLUG}"
     exit
