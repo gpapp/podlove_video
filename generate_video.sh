@@ -206,7 +206,7 @@ function add_episode_frame() {
             composite -compose src_over -gravity center - -geometry ${xoff}${yoff} "${last_frame}"  \
              ${frame}
     fi
-    [ -z "${duration}" ] || echo "duration ${duration}" >>$script
+    [ -z "${duration}" ] || echo "duration ${duration}.00" >>$script
     echo "file ${frame}" >>$script
     echo ${frame}
 }
@@ -234,16 +234,13 @@ function create_images () {
       	cp ${title_frame} "${TARGET_DIR}/${EPISODE_SLUG}_title.jpg"
 	local last_video_frame="$overlay_frame"
 	echo "ffconcat version 1.0
-file ${title_frame}
-duration 2
-inpoint 00:00:00.00
+
 file ${title_frame}" > ${SCRIPT}
     fi
 
     local psc_in="${SRC_DIR}/${EPISODE_SLUG}.psc"
     local psc_out="${TARGET_DIR}/${EPISODE_SLUG}.psc"
     local last_title=""
-
     echo '<psc:chapters xmlns:psc="http://podlove.org/simple-chapters" version="1.2">' >"${psc_out}"
     while IFS= read -r line || [ -z "${done_last}" ] ; do
 	[ -z "$line" ] && local done_last=1
@@ -291,13 +288,11 @@ file ${title_frame}" > ${SCRIPT}
     mogrify -quality 20 -resize 3000x3000 "${TARGET_DIR}/images/${EPISODE_SLUG}/${EPISODE_SLUG}_*.jpg"
 
     if [ ! "${skip_video_frames}" = "true" ]; then
-	local mp3src="${SRC_DIR}/${EPISODE_SLUG}.mp3"
+	local mp3src="${TARGET_DIR}/${EPISODE_SLUG}.mp3"
 	local position=$(ffprobe -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${mp3src}" 2>/dev/null |cut -d\. -f1)
 	local duration=$(( $position - $last_position ))
-	echo "duration ${duration}" >>$SCRIPT
+	echo "duration ${duration}.00" >>$SCRIPT
 	echo "file ${last_video_frame}" >>$SCRIPT
-	echo "duration 2" >>$SCRIPT
-	echo "file ${title_frame}" >>$SCRIPT
 	# Remove overlay if there are other frames in the video
 	[ "${overlay_frame}" == "${last_video_frame}" ] ||  rm "$overlay_frame"
     fi
@@ -306,9 +301,13 @@ file ${title_frame}" > ${SCRIPT}
 function create_video () {
     local sequence="$1"
     local mp3src="${TARGET_DIR}/${EPISODE_SLUG}.mp3"
-    ffmpeg -hide_banner -y -f concat -async 1 -safe 0 -i "${sequence}" -i "${mp3src}" \
-	-c:v libx264 -preset medium -tune stillimage -c:a aac -ab 192k -movflags +faststart -vf "fps=1,format=yuv420p" \
-	"${TARGET_DIR}/${EPISODE_SLUG}.mp4"
+    local src_params="-hide_banner -y -f concat -safe 0 -i ${sequence}"
+    local video_out_params="-c:v h264 -preset fast -tune stillimage -profile:v high -pix_fmt yuvj420p -fps_mode vfr -vf fps=20 -b:v 3500K -async 1"
+    local audio_out_params="-ac 2 -c:a aac -b:a 192K"
+#    local audio_out_params="-ac 2 -c:a copy"
+    ffmpeg ${src_params} ${video_out_params} -pass 1 -an -f mp4 /dev/null && \
+	ffmpeg ${src_params} -i ${mp3src} -shortest ${video_out_params} -pass 2 ${audio_out_params} "${TARGET_DIR}/${EPISODE_SLUG}.mp4"
+#    ffmpeg ${src_params} -i ${mp3src} -shortest ${video_out_params} ${audio_out_params} "${TARGET_DIR}/${EPISODE_SLUG}.mp4"
 }
 
 function remove_images () {
@@ -424,6 +423,6 @@ if [ ! "${IMAGEONLY}" = "true" ] && [ ! -e "${TARGET_DIR}/${EPISODE_SLUG}.mp4" ]
   fi
 fi
 
-chown www-data.www-data -R ${TARGET_DIR}
+chown www-data:www-data -R ${TARGET_DIR}
 chmod -R ug+rwX ${TARGET_DIR}
 display_template
