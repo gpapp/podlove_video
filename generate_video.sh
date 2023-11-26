@@ -32,7 +32,6 @@ EOM
 
 function load_ep_data_SQL () {
     local episode=$1
-    set -x
     if [ ! -e episode_export.txt -o "$(find episode_export.txt -mtime +1)" ]; then
         export_from_mysql >episode_export.txt
     fi
@@ -40,7 +39,6 @@ function load_ep_data_SQL () {
         $( awk -F"\t" -r -v ep=${episode} '{if ($1==ep) {print gensub(/\t/,"|","g",$0)}}' episode_export.txt)
     EPISODE_SUMMARY=$(awk -F"\t" -v ep=${episode} '{if ($1==ep) {print $7}}' episode_export.txt |sed -e 's/\r//g;s/\\n/\n/g;s/\\t/\t/g'|perl -Mopen=locale -pe 's/&#x([\da-f]+);/chr hex $1/gie')
     EPISODE_LINKS=$(awk -F"\t" -v ep=${episode} '{if ($1==ep) {print $8}}' episode_export.txt |sed -e 's/\r//g;s/\\n/\n/g;s/\\t/\t/g')
-    exit
 }
 
 function update_ep_image_SQL () {
