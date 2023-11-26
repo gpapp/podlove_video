@@ -20,7 +20,7 @@ function export_from_mysql () {
     MYSQL_CMD="${SSH_CMD} mysql ${MYSQL_DB} -u${MYSQL_USER} -p${MYSQL_PASSWORD} -B"
     ${MYSQL_CMD} << EOM
 SET SESSION group_concat_max_len = 8172;
-select ep.number, ep.slug, ep.title, date_format(ep.recording_date,"%Y-%m-%dT%H:%i:%sZ"), date_format(po.post_date,"%Y-%m-%dT%H:%i:%sZ"), kw.kw, ep.summary, se.links
+select ep.number, ep.slug, coalesce(ep.title,po.post_title), date_format(ep.recording_date,"%Y-%m-%dT%H:%i:%sZ"), date_format(po.post_date,"%Y-%m-%dT%H:%i:%sZ"), kw.kw, ep.summary, se.links
         from ${MYSQL_PREFIX}podlove_episode ep
         left join ${MYSQL_PREFIX}posts po on ep.post_id=po.id and po.post_status not in ("inherit", "auto-draft")
 	left join (select sep.id id, group_concat(concat(se.title,": ",se.original_url) SEPARATOR "\\n") as links from ${MYSQL_PREFIX}podlove_modules_shownotes_entry se, ${MYSQL_PREFIX}podlove_episode sep where sep.id=se.episode_id group by sep.id) se on se.id=ep.id 
@@ -32,6 +32,7 @@ EOM
 
 function load_ep_data_SQL () {
     local episode=$1
+    set -x
     if [ ! -e episode_export.txt -o "$(find episode_export.txt -mtime +1)" ]; then
         export_from_mysql >episode_export.txt
     fi
@@ -39,6 +40,7 @@ function load_ep_data_SQL () {
         $( awk -F"\t" -r -v ep=${episode} '{if ($1==ep) {print gensub(/\t/,"|","g",$0)}}' episode_export.txt)
     EPISODE_SUMMARY=$(awk -F"\t" -v ep=${episode} '{if ($1==ep) {print $7}}' episode_export.txt |sed -e 's/\r//g;s/\\n/\n/g;s/\\t/\t/g'|perl -Mopen=locale -pe 's/&#x([\da-f]+);/chr hex $1/gie')
     EPISODE_LINKS=$(awk -F"\t" -v ep=${episode} '{if ($1==ep) {print $8}}' episode_export.txt |sed -e 's/\r//g;s/\\n/\n/g;s/\\t/\t/g')
+    exit
 }
 
 function update_ep_image_SQL () {
