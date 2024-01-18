@@ -139,13 +139,13 @@ function create_cover_art() {
             ${overlay_logo}
         convert "${EPISODE_IMAGE}" -resize 2200x1600 -gravity center -background black -extent 2400x2400 \
           miff:- \
-        | composite -compose src_over -gravity southeast -geometry +40+40 "${overlay_logo}" - \
+        | composite -compose src_over -gravity southwest -geometry +40+40 "${overlay_logo}" - \
 	    miff:- \
         | convert - -gravity north ${FONT} -pointsize 140 -fill white -annotate +0+50 "$PODCAST_TITLE" \
 	    miff:- \
         | convert - -gravity north ${FONT} -pointsize 100 -fill white -annotate +0+200 "$EPISODE - $EPISODE_TITLE" \
 	    miff:- \
-        | convert - -gravity southwest ${FONT} -pointsize 100 -fill white -annotate +50+50 "${pd}" \
+        | convert - -gravity southeast ${FONT} -pointsize 100 -fill white -annotate +50+50 "${pd}" \
        	    "${target}"
        rm ${overlay_logo}
     fi
@@ -233,10 +233,10 @@ function create_images () {
 
     mkdir -p "${TARGET_DIR}/images/${EPISODE_SLUG}/"
 
+    CHAPTER_METADATA=$(mktemp --suffix=.meta)
     #Create video background frame and title overlay
     if [ ! "${skip_video_frames}" = "true" ]; then
 	SCRIPT=$(mktemp --suffix=.frames)
-	CHAPTER_METADATA=$(mktemp --suffix=.meta)
 
 	echo "Adding title frame in ${SCRIPT} title: ${text}" >&2
     	local overlay_frame=$(get_overlay_image)
@@ -330,13 +330,12 @@ function create_video () {
     local audio_out_params="-ac 2 -c:a aac -b:a 192K"
 
     local tmpvid=$(mktemp --suffix=.mp4)
-    set -x
     ffmpeg ${ff_params} -f concat -safe 0 -i ${sequence} ${video_params} -r 1  ${tmpvid}
 #    local audio_out_params="-ac 2 -c:a copy"
 #    ffmpeg ${ff_params} -i ${tmpvid} ${video_params} ${video_out_params} -pass 1 -an /dev/null && \
 #        ffmpeg ${ff_params} -i ${tmpvid} -i ${mp3src} -shortest ${video_params} ${video_out_params} -pass 2 ${audio_out_params} "${TARGET_DIR}/${EPISODE_SLUG}.mp4"
 #    rm ffmpeg2pass-0.log ffmpeg2pass-0.log.mbtree
-    ffmpeg ${src_params} -i ${tmpvid} -i ${chapters} -i ${mp3src} -shortest \
+     ffmpeg ${src_params} -i ${tmpvid} -i ${chapters} -i ${mp3src} -shortest \
 	    ${video_params} ${video_out_params} \
 	    -map_metadata 1 -map_chapters 1 \
 	    ${audio_out_params} "${TARGET_DIR}/${EPISODE_SLUG}.mp4"
@@ -452,9 +451,9 @@ if [ ! "${IMAGEONLY}" = "true" ] && [ ! -e "${TARGET_DIR}/${EPISODE_SLUG}.mp4" ]
       create_video $SCRIPT $CHAPTER_METADATA
       tree -H "/podcast" -L 1 --noreport --charset utf-8 -P "*.mp?" -o ${TARGET_DIR}/index.html ${TARGET_DIR}
       remove_images "${SCRIPT}"
-      rm ${CHAPTER_METADATA}      
   fi
 fi
+rm ${CHAPTER_METADATA}      
 
 chown www-data:www-data -R ${TARGET_DIR}
 chmod -R ug+rwX ${TARGET_DIR}
